@@ -83,6 +83,7 @@ int contadorMins = 0;
 int contadorHs = 0;
 int hrI;
 int minI;
+int botonAnalo;
 
 //VARIABLES PARA EL RELE
 const int rele = 13;
@@ -174,7 +175,7 @@ void loop() {
   }
   
   
-  boton = botones_LCD(botonAnalo);
+  String boton = botones_LCD(int botonAnalo);
   
   
   // para que el contador no se exceda de 60
