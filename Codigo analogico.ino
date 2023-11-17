@@ -83,7 +83,6 @@ int contadorMins = 0;
 int contadorHs = 0;
 int hrI;
 int minI;
-int botonAnalo;
 
 //VARIABLES PARA EL RELE
 const int rele = 13;
@@ -107,9 +106,6 @@ void setup() {
 void loop() {
   tiempo_actual = millis();
   delta_tiempo = tiempo_actual - tiempo_anterior;
-  
-  botonAnalo = analogRead(A0);
-  
   
    if (Serial.available() != 0) {
     int option = Serial.parseInt();
@@ -144,7 +140,7 @@ void loop() {
     }
   }
   
-  if (delta_tiempo >= 1000 && analogRead(A0) >= 1023){
+  if (delta_tiempo >= 1000){
     if(!mostrarHora)
     {
       lcd_1.clear();
@@ -156,6 +152,78 @@ void loop() {
       if(contadorMins < 10) lcd_1.print("0");
       lcd_1.print(contadorMins);
     }
+  }
+  
+  
+  // para que el contador no se exceda de 60
+  // BOTON UP
+  if (analogRead(A0) >= 99 && analogRad(A0) <= 127){
+    delay(80);
+    if (contador < 60){
+          lcd_1.clear();
+          contador++;
+          Serial.println("+");
+          lcd_1.setCursor(0, 0);
+          lcd_1.print("Cant de minutos:");
+          lcd_1.setCursor(0, 1);
+          lcd_1.print(contador);
+          mostrarHora = HIGH;
+        }
+  }
+  
+  
+  
+  // Control para no ingresar numeros negativos
+  // BOTON DOWN
+  if (analogRead(A0) >= 255 && analogRad(A0) <= 280){
+    delay(80);
+    if (contador >= 1){
+          lcd_1.clear();
+          contador--;
+          Serial.println("-");
+          lcd_1.setCursor(0, 0);
+          lcd_1.print("Cant de minutos:");
+          lcd_1.setCursor(0, 1);
+          lcd_1.print(contador);
+          mostrarHora = HIGH;
+      }
+  }
+
+  
+  // para no setear con un valor negativo o 0
+  // BOTON SELECT
+  if (analogRead(A0) >= 640 && analogRad(A0) <= 668){
+    if (contador > 0){
+          contador2 = 0;
+          calculo_tiempoSeg = contador * 60;
+          lcd_1.clear();
+          lcd_1.setCursor(0, 0);
+          lcd_1.print("Intervalo cada:");
+          lcd_1.setCursor(0, 1);
+          lcd_1.print(contador);
+          lcd_1.setCursor(2, 1);
+          lcd_1.print("Minutos");
+          mostrarHora = LOW;
+    }
+  }
+  
+  // Para eliminar el intevalo BOTON RIGHT
+  if (analogRead(A0) >= 0 && analogRead(A0) <= 60){
+      calculo_tiempoSeg = 0;
+    }
+  //LEFT(399 A 435)
+  if (analogRead(A0) >= 399 && analogRead(A0) <= 435){
+  	digitalWrite(rele, HIGH);
+    espera();
+    digitalWrite(rele, LOW);
+  }
+  
+  if (delta_tiempo >= 1000){
+  	contador2++;
+    //Serial.println(delta_tiempo);
+    Serial.println(contador2);
+    contadorSegs++;
+    tiempo_anterior = tiempo_actual;
   }
   
   if (contadorSegs > 59) {
@@ -172,77 +240,6 @@ void loop() {
   if (contadorHs > 23) {
   	contadorHs = 0;
     contadorMins = 0;
-  }
-  
-  
-  String boton = botones_LCD(int botonAnalo);
-  
-  
-  // para que el contador no se exceda de 60
-  // BOTON UP
-  if (boton == "btnArriba"){
-    if (contador < 60){
-          lcd_1.clear();
-          contador++;
-          Serial.println("+");
-          lcd_1.setCursor(0, 0);
-          lcd_1.print("Cant de minutos:");
-          lcd_1.setCursor(0, 1);
-          lcd_1.print(contador);
-          mostrarHora = HIGH;
-        }
-  }
-  
-  // Control para no ingresar numeros negativos
-  // BOTON DOWN
-  if (boton == "btnAbajo"){
-    if (contador >= 1){
-          lcd_1.clear();
-          contador--;
-          Serial.println("-");
-          lcd_1.setCursor(0, 0);
-          lcd_1.print("Cant de minutos:");
-          lcd_1.setCursor(0, 1);
-          lcd_1.print(contador);
-          mostrarHora = HIGH;
-      }
-  }
-
-  
-  // para no setear con un valor negativo o 0
-  // BOTON SELECT
-  if (boton == "btnSelect"){
-    if (contador > 0){
-          contador2 = 0;
-          calculo_tiempoSeg = contador * 60;
-          lcd_1.clear();
-          lcd_1.setCursor(0, 0);
-          lcd_1.print("Intervalo cada:");
-          lcd_1.setCursor(0, 1);
-          lcd_1.print(contador);
-          lcd_1.setCursor(2, 1);
-          lcd_1.print("Minutos");
-          mostrarHora = LOW;
-    }
-  }
-  
-  // Para eliminar el intevalo BOTON RIGHT
-  if (boton == "btnDerecha"){
-      calculo_tiempoSeg = 0;
-    }
-  //LEFT(399 A 435)
-  if (boton == "btnIzquierda"){
-  	digitalWrite(rele, HIGH);
-    espera();
-    digitalWrite(rele, LOW);
-  }
-  
-  if (delta_tiempo >= 1000){
-  	contador2++;
-    //Serial.println(delta_tiempo);
-    Serial.println(contador2);
-    contadorSegs++;
-    tiempo_anterior = tiempo_actual;
   }
   
   if (contador2 == calculo_tiempoSeg){	
@@ -271,22 +268,4 @@ void loop() {
 
 void espera(){
 	delay(900);
-}
-
-
-//Creamos una funcion que devuelva un texto de que boton se utilizo basandose en los rangos de los valores
-String botones_LCD(int buttonReply) {
-  String text;
-  Serial.println(buttonReply);
-  //if (buttonReply < 60) text = "btnDerecha";
-  if (buttonReply > 0 && buttonReply < 60) text = "btnDerecha";
-  //if (buttonReply > 99 && buttonReply < 127)text = "btnArriba";
-  if (buttonReply > 99 && buttonReply < 127) text = "btnArriba";
-  //if (buttonReply > 255 && buttonReply < 280)  text = "btnAbajo";
-  if (buttonReply > 255 && buttonReply < 280) text = "btnAbajo";
-  // if (buttonReply > 399 && buttonReply < 435)  text = "btnIzquierda";
-  if (buttonReply > 399 && buttonReply < 435) text = "btnIzquierda";
-  // if (buttonReply > 640 && buttonReply < 668)  text = "btnSelect";
-  if (buttonReply > 640 && buttonReply < 668) text = "btnSelect";
-  return text;
 }
